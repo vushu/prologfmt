@@ -1,0 +1,51 @@
+name: Build Release Binaries
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # We run on all three major OS types
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: prologfmt-linux
+          - os: macos-latest
+            artifact_name: prologfmt-macos
+          - os: windows-latest
+            artifact_name: prologfmt-windows.exe
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SWI-Prolog (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo apt-add-repository ppa:swi-prolog/stable
+            sudo apt-get update
+            sudo apt-get install swi-prolog
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            brew install swi-prolog
+          fi
+
+      - name: Install SWI-Prolog (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install swi-prolog
+
+      - name: Build Binary
+        # We use the direct swipl command to ensure it works across shells
+        run: swipl -O -q -o ${{ matrix.artifact_name }} -g main -c prologfmt.pl
+
+      - name: Upload Binary to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
