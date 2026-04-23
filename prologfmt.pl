@@ -100,15 +100,19 @@ run_formatter_tests :-
 
 main :-
     current_prolog_flag(argv, Argv),
-    (   Argv = [File]
-    ->  (   exists_file(File)
-        ->  format_prolog_file(File),
-            halt(0)
-        ;   format(user_error, "Error: File '~w' not found.~n", [File]),
-            halt(1)
-        )
-    ;   % If no args, just show usage. 
-        % We will run tests via the Makefile instead of the binary.
-        format(user_error, "Usage: prologfmt <file>~n", []),
-        halt(1)
+    (   Argv = ["-i", File] % Handle -i flag
+    ->  format_string_to_file(File)
+    ;   Argv = [File]
+    ->  format_prolog_file(File), halt(0)
+    ;   run_formatter_tests, halt(0)
     ).
+
+format_string_to_file(File) :-
+    read_file_to_string(File, Raw, []),
+    format_string(Raw, Formatted),
+    setup_call_cleanup(
+        open(File, write, Out),
+        write(Out, Formatted),
+        close(Out)
+    ),
+    halt(0).

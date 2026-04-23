@@ -4,13 +4,15 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # We run on all three major OS types
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
@@ -24,23 +26,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install SWI-Prolog (Linux/macOS)
-        if: matrix.os != 'windows-latest'
+      - name: Install SWI-Prolog (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            sudo apt-add-repository ppa:swi-prolog/stable
-            sudo apt-get update
-            sudo apt-get install swi-prolog
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            brew install swi-prolog
-          fi
+          sudo apt-add-repository ppa:swi-prolog/stable
+          sudo apt-get update
+          sudo apt-get install swi-prolog
+
+      - name: Install SWI-Prolog (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install swi-prolog
 
       - name: Install SWI-Prolog (Windows)
         if: matrix.os == 'windows-latest'
-        run: choco install swi-prolog
+        shell: powershell
+        run: |
+          choco install swi-prolog -y
+          echo "C:\Program Files\swipl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Build Binary
-        # We use the direct swipl command to ensure it works across shells
+        shell: bash
         run: swipl -O -q -o ${{ matrix.artifact_name }} -g main -c prologfmt.pl
 
       - name: Upload Binary to Release

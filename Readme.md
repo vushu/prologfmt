@@ -6,4 +6,7 @@ Simple quick prolog formatter
 
 ```
 ./prologfmt messy.pl > formatted.pl
+
+// in-place change
+./prologfmt -i messy.pl
 ```
