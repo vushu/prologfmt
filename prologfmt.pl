@@ -98,21 +98,35 @@ run_formatter_tests :-
         halt(1)
     ).
 
+
 main :-
     current_prolog_flag(argv, Argv),
-    (   Argv = ["-i", File] % Handle -i flag
-    ->  format_string_to_file(File)
-    ;   Argv = [File]
-    ->  format_prolog_file(File), halt(0)
-    ;   run_formatter_tests, halt(0)
+    (   % Case 1: In-place formatting
+        Argv = [Flag, File], 
+        member(Flag, ['-i', '--in-place'])
+    ->  format_string_to_file(File),
+        halt(0)
+
+    ;   % Case 2: Print to stdout
+        Argv = [File], 
+        \+ sub_string(File, 0, 1, _, "-") % Ensure it's not a flag
+    ->  format_prolog_file(File),
+        halt(0)
+
+    ;   % Case 3: No valid file args, run tests
+        run_formatter_tests,
+        halt(0)
     ).
 
 format_string_to_file(File) :-
-    read_file_to_string(File, Raw, []),
-    format_string(Raw, Formatted),
-    setup_call_cleanup(
-        open(File, write, Out),
-        write(Out, Formatted),
-        close(Out)
-    ),
-    halt(0).
+    (   exists_file(File)
+    ->  read_file_to_string(File, Raw, []),
+        format_string(Raw, Formatted),
+        setup_call_cleanup(
+            open(File, write, Out),
+            format(Out, "~s", [Formatted]), % Ensure it writes the string correctly
+            close(Out)
+        )
+    ;   format(user_error, "Error: File '~w' not found.~n", [File]),
+        halt(1)
+    ).

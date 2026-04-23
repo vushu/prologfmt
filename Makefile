@@ -37,7 +37,7 @@ $(TARGET)$(EXE): $(SOURCE)
 # We use halt(0) on success and halt(1) on failure for CI/CD compatibility
 test:
 	@echo "Running tests from source..."
-	@$(PROLOG) $(FLAGS) -g "run_formatter_tests, halt(0)." -t "halt(1)." $(SOURCE) && echo "✅ Tests Passed"
+	@$(PROLOG) $(FLAGS) -g "run_formatter_tests, halt(0)." -t "halt(1)." $(SOURCE) && echo "Tests Passed"
 
 # Clean up build artifacts
 clean:
