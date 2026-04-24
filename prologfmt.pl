@@ -24,8 +24,6 @@ format_prolog_file(File) :-
 read_and_print(In) :-
     read_and_print_grouped(In, none).
 
-% NEW LOGIC: Always add newline if it's a 'test' predicate
-% STANDARD LOGIC: Add newline only if the predicate CHANGES
 read_and_print_grouped(In, LastPred) :-
     read_term(In,
               Term,
@@ -54,7 +52,6 @@ read_and_print_grouped(In, LastPred) :-
         read_and_print_grouped(In, CurrentPred)
     ).
 
-% =============================================================================
 % UTILITIES
 % =============================================================================
 print_comments([]).
@@ -71,7 +68,6 @@ extract_predicate_indicator((Head-->_), Name/Arity) :-
 extract_predicate_indicator(Term, Name/Arity) :-
     functor(Term, Name, Arity).
 
-% =============================================================================
 % UNIT TESTS
 % =============================================================================
 :- begin_tests(prolog_formatter).
@@ -101,9 +97,6 @@ test(multiple_clauses_no_clump) :-
 
 :- end_tests(prolog_formatter).
 
-% Run tests and print a message only if they actually pass
-% If run_tests fails, it usually prints its own errors, 
-% but we ensure the process exits with an error code for the Makefile
 run_formatter_tests :-
     (   run_tests
     ->  format("~N% All tests passed!~n")
