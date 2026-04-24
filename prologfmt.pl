@@ -1,46 +1,51 @@
-:- module(prologfmt, [format_string/2, format_prolog_file/1, run_formatter_tests/0, main/0]).
-
+:- module(prologfmt,
+          [ format_string/2,
+            format_prolog_file/1,
+            run_formatter_tests/0,
+            main/0
+          ]).
 :- use_module(library(prolog_code)).
 :- use_module(library(plunit)).
 
-% =============================================================================
-% CORE FORMATTING ENGINE
-% =============================================================================
-
 %% format_string(+RawCode:string, -Formatted:string) is det.
 format_string(Raw, Formatted) :-
-    setup_call_cleanup(
-        open_string(Raw, In),
-        with_output_to(string(Formatted), read_and_print(In)),
-        close(In)
-    ).
+    setup_call_cleanup(open_string(Raw, In),
+                       with_output_to(string(Formatted),
+                                      read_and_print(In)),
+                       close(In)).
 
 %% format_prolog_file(+File:atom) is det.
 format_prolog_file(File) :-
-    setup_call_cleanup(
-        open(File, read, In),
-        read_and_print(In),
-        close(In)
-    ).
+    setup_call_cleanup(open(File, read, In),
+                       read_and_print(In),
+                       close(In)).
 
 %% read_and_print(+Stream:stream) is det.
 read_and_print(In) :-
     read_and_print_grouped(In, none).
 
+% NEW LOGIC: Always add newline if it's a 'test' predicate
+% STANDARD LOGIC: Add newline only if the predicate CHANGES
 read_and_print_grouped(In, LastPred) :-
-    % variable_names preserves X, Y, Z
-    % consume_layout skips the '.' and whitespace to keep the stream moving
-    read_term(In, Term, [
-        variable_names(Vars), 
-        comments(Comments), 
-        consume_layout(true),
-        module(user)
-    ]),
-    (   Term == end_of_file
+    read_term(In,
+              Term,
+              [ variable_names(Vars),
+                comments(Comments),
+                consume_layout(true),
+                module(user)
+              ]),
+    (   Term==end_of_file
     ->  print_comments(Comments)
     ;   extract_predicate_indicator(Term, CurrentPred),
-        % If we changed predicates, add an extra newline for 'breathing room'
-        (   (LastPred \= none, CurrentPred \= LastPred)
+        (   (   CurrentPred=test/1
+            ;   CurrentPred=test/2
+            )
+        ->  (   LastPred\==none
+            ->  nl
+            ;   true
+            )
+        ;   LastPred\==none,
+            CurrentPred\=LastPred
         ->  nl
         ;   true
         ),
@@ -52,81 +57,85 @@ read_and_print_grouped(In, LastPred) :-
 % =============================================================================
 % UTILITIES
 % =============================================================================
-
 print_comments([]).
 print_comments([_Pos-Comment|T]) :-
     format("~w~n", [Comment]),
     print_comments(T).
 
-extract_predicate_indicator((Head :- _), Name/Arity) :- !, functor(Head, Name, Arity).
-extract_predicate_indicator((Head --> _), Name/Arity) :- !, functor(Head, Name, Arity).
-extract_predicate_indicator(Term, Name/Arity) :- functor(Term, Name, Arity).
+extract_predicate_indicator((Head:-_), Name/Arity) :-
+    !,
+    functor(Head, Name, Arity).
+extract_predicate_indicator((Head-->_), Name/Arity) :-
+    !,
+    functor(Head, Name, Arity).
+extract_predicate_indicator(Term, Name/Arity) :-
+    functor(Term, Name, Arity).
 
 % =============================================================================
 % UNIT TESTS
 % =============================================================================
-
 :- begin_tests(prolog_formatter).
 
 test(preserve_comments_and_space) :-
-    Raw = "% Comment\na(1). b(1).",
+    Raw="% Comment\na(1). b(1).",
     format_string(Raw, Formatted),
-    assertion(sub_string(Formatted, _, _, _, "% Comment\na(1).\n\nb(1).")).
+    assertion(sub_string(Formatted,
+                         _,
+                         _,
+                         _,
+                         "% Comment\na(1).\n\nb(1).")).
 
+% Standard variant check: structurally identical
 test(logic_preservation) :-
-    Raw = "parent(X, Y) :- father(X, Y).",
+    Raw="parent(X, Y) :- father(X, Y).",
     format_string(Raw, Formatted),
     term_string(T1, Raw),
     term_string(T2, Formatted),
-    % Standard variant check: structurally identical
-    assertion(T1 =@= T2).
+    assertion(T1=@=T2).
 
+% Clauses of the same predicate should only have one newline
 test(multiple_clauses_no_clump) :-
-    Raw = "f(1). f(2).",
+    Raw="f(1). f(2).",
     format_string(Raw, Formatted),
-    % Clauses of the same predicate should only have one newline
     assertion(sub_string(Formatted, _, _, _, "f(1).\nf(2).")).
 
 :- end_tests(prolog_formatter).
 
+% Run tests and print a message only if they actually pass
+% If run_tests fails, it usually prints its own errors, 
+% but we ensure the process exits with an error code for the Makefile
 run_formatter_tests :-
-    % Run tests and print a message only if they actually pass
     (   run_tests
     ->  format("~N% All tests passed!~n")
-    ;   % If run_tests fails, it usually prints its own errors, 
-        % but we ensure the process exits with an error code for the Makefile
-        halt(1)
+    ;   halt(1)
     ).
 
-
+% Case 1: In-place formatting
+% Case 2: Print to stdout
+% Ensure it's not a flag
+% Case 3: No valid file args, run tests
 main :-
     current_prolog_flag(argv, Argv),
-    (   % Case 1: In-place formatting
-        Argv = [Flag, File], 
+    (   Argv=[Flag, File],
         member(Flag, ['-i', '--in-place'])
     ->  format_string_to_file(File),
         halt(0)
-
-    ;   % Case 2: Print to stdout
-        Argv = [File], 
-        \+ sub_string(File, 0, 1, _, "-") % Ensure it's not a flag
+    ;   Argv=[File],
+        \+ sub_string(File, 0, 1, _, "-")
     ->  format_prolog_file(File),
         halt(0)
-
-    ;   % Case 3: No valid file args, run tests
-        run_formatter_tests,
+    ;   run_formatter_tests,
         halt(0)
     ).
 
+% Ensure it writes the string correctly
 format_string_to_file(File) :-
     (   exists_file(File)
     ->  read_file_to_string(File, Raw, []),
         format_string(Raw, Formatted),
-        setup_call_cleanup(
-            open(File, write, Out),
-            format(Out, "~s", [Formatted]), % Ensure it writes the string correctly
-            close(Out)
-        )
+        setup_call_cleanup(open(File, write, Out),
+                           format(Out, "~s", [Formatted]),
+                           close(Out))
     ;   format(user_error, "Error: File '~w' not found.~n", [File]),
         halt(1)
     ).
