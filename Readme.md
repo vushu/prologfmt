@@ -82,6 +82,6 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 })
 ```
 
-## Known issues/features
+## Known issues
 - Inline comments gets moved to the top of the clause.
-- Inline comments after a `.` gets moved to the top of the next clause.
+- Inline comments after `.` gets moved to the top of the next clause.
