@@ -47,24 +47,32 @@ read_and_print_grouped(In, LastPred) :-
 %% If parsing fails, rewind and print the raw text
 handle_and_restore(In, StartPos, _Error) :-
     set_stream_position(In, StartPos),
-    % Read until the end of the current line to preserve the "junk"
-    read_line_to_string(In, Junk),
-    (   Junk == end_of_file
-    ->  true
-    ;   format("~s~n", [Junk])
+    % Skip leading whitespace/newlines so we don't 'double-tap' the Enter key
+    peek_code(In, Code),
+    (   char_type(Code, space)
+    ->  get_code(In, _), handle_and_restore(In) % Recursive skip
+    ;   read_line_to_string(In, Junk),
+        (   Junk == end_of_file
+        ->  true
+        ;   format("~s~n", [Junk]) 
+        )
+    ).
+
+% Simplified helper for the recursion
+handle_and_restore(In) :-
+    peek_code(In, Code),
+    (   char_type(Code, space)
+    ->  get_code(In, _), handle_and_restore(In)
+    ;   read_line_to_string(In, Junk),
+        ( Junk \== end_of_file -> format("~s~n", [Junk]) ; true )
     ).
 
 is_test_predicate(test/_).
 
 process_valid_term(Term, Vars, Comments, LastPred, CurrentPred) :-
     extract_predicate_indicator(Term, CurrentPred),
-    (   LastPred \== none,
-    ( CurrentPred \= LastPred
-    ; ( is_test_predicate(CurrentPred),
-        is_test_predicate(LastPred)
-      )
-    )
-    ->  nl
+    (   LastPred \== none, CurrentPred \= LastPred
+    ->  format("~n", []) % Only add one newline between different predicates
     ;   true
     ),
     print_comments(Comments),
