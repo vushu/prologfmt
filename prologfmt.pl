@@ -54,9 +54,16 @@ handle_and_restore(In, StartPos, _Error) :-
     ;   format("~s~n", [Junk])
     ).
 
+is_test_predicate(test/_).
+
 process_valid_term(Term, Vars, Comments, LastPred, CurrentPred) :-
     extract_predicate_indicator(Term, CurrentPred),
-    (   LastPred \== none, CurrentPred \= LastPred
+    (   LastPred \== none,
+    ( CurrentPred \= LastPred
+    ; ( is_test_predicate(CurrentPred),
+        is_test_predicate(LastPred)
+      )
+    )
     ->  nl
     ;   true
     ),
