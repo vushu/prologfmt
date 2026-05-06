@@ -55,13 +55,13 @@ innoremap <leader>f :call PrologFormat()<CR>
 
 lua
 ```lua
-local function format_prolog()
+local function prolog_format()
   local cursor = vim.api.nvim_win_get_cursor(0)
   vim.cmd("%!prologfmt")
   vim.api.nvim_win_set_cursor(0, cursor)
 end
 
-vim.keymap.set("n", "<leader>f", format_prolog)
+vim.keymap.set("n", "<leader>f", prolog_format)
 ```
 
 ### Trigger on save
