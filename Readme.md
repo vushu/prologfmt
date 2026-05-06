@@ -10,6 +10,13 @@ make
 
 // in-place format
 ./prologfmt -i messy.pl
+
+// using stdin
+cat messy.pl | prologfmt
+
+// or explicitly:
+
+prologfmt --stdin < file.pl
 ```
 
 ## Vim

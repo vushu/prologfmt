@@ -109,15 +109,35 @@ run_formatter_tests :-
 % Case 3: No valid file args, run tests
 main :-
     current_prolog_flag(argv, Argv),
-    (   Argv=[Flag, File],
+    (   % Case 1: In-place formatting
+        Argv=[Flag, File],
         member(Flag, ['-i', '--in-place'])
     ->  format_string_to_file(File),
         halt(0)
-    ;   Argv=[File],
+
+    ;   % Case 2: File → stdout
+        Argv=[File],
         \+ sub_string(File, 0, 1, _, "-")
     ->  format_prolog_file(File),
         halt(0)
-    ;   run_formatter_tests,
+
+    ;   % Case 3: Explicit stdin
+        Argv=['--stdin']
+    ->  read_string(user_input, _, Raw),
+        format_string(Raw, Formatted),
+        format("~s", [Formatted]),
+        halt(0)
+
+    ;   % Case 4: Implicit stdin (no args, but piped input)
+        Argv=[],
+        \+ stream_property(user_input, tty(true))
+    ->  read_string(user_input, _, Raw),
+        format_string(Raw, Formatted),
+        format("~s", [Formatted]),
+        halt(0)
+
+    ;   % Case 5: fallback → tests
+        run_formatter_tests,
         halt(0)
     ).
 
