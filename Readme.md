@@ -1,6 +1,9 @@
 # prologfmt
 
-A Prolog formatter that follows SWI-Prolog’s formatting conventions, with the exception of tests, where we insert newline to improve readability.
+A Prolog formatter that follows SWI-Prolog’s formatting conventions, with the exception of
+
+- tests, where we insert newline to improve readability.
+- wraps when exceeding 80 characters.
 
 ## Install 
 

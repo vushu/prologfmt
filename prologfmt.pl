@@ -48,7 +48,7 @@ read_and_print_grouped(In, LastPred) :-
         ;   true
         ),
         print_comments(Comments),
-        portray_clause(current_output, Term, [variable_names(Vars)]),
+        portray_clause(current_output, Term, [variable_names(Vars), right_margin(80), indent_arguments(4)]),
         read_and_print_grouped(In, CurrentPred)
     ).
 
