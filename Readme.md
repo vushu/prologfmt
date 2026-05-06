@@ -38,11 +38,13 @@ endfunction
 
 lua
 ```lua
-vim.keymap.set("n", "<leader>f", function()
+local function format_prolog()
   local cursor = vim.api.nvim_win_get_cursor(0)
   vim.cmd("%!prologfmt")
   vim.api.nvim_win_set_cursor(0, cursor)
-end)
+end
+
+vim.keymap.set("n", "<leader>f", format_prolog)
 ```
 
 On save
