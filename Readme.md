@@ -27,13 +27,13 @@ Trigger on `<leader>f`
 
 vimscript
 ```vim
-innoremap <leader>f :call PrologFormat()<CR>
-
 function! PrologFormat()
   let l:pos = getpos('.')
   %!prologfmt
   call setpos('.', l:pos)
 endfunction
+
+innoremap <leader>f :call PrologFormat()<CR>
 ```
 
 lua
