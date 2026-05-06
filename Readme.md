@@ -1,7 +1,6 @@
 # prologfmt
 
-A prolog formatter, which is using swi-prolog's formatting scheme,
-besides for test where we add newline for readability.
+A Prolog formatter that follows SWI-Prolog’s formatting conventions, except in tests where additional newlines are inserted to improve readability.
 
 ## Usage:
 
