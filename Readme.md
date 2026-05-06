@@ -23,7 +23,7 @@ prologfmt --stdin < file.pl
 
 This assumes that prologfmt is added to `PATH` 
 
-Trigger on `<leader>f`
+### Trigger on `<leader>f`
 
 vimscript
 ```vim
@@ -47,7 +47,7 @@ end
 vim.keymap.set("n", "<leader>f", format_prolog)
 ```
 
-On save
+### Trigger on save
 
 vimscript
 ```vim
