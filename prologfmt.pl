@@ -25,32 +25,78 @@ read_and_print(In) :-
     read_and_print_grouped(In, none).
 
 read_and_print_grouped(In, LastPred) :-
-    read_term(In,
-              Term,
-              [ variable_names(Vars),
-                comments(Comments),
-                consume_layout(true),
-                module(user)
-              ]),
-    (   Term==end_of_file
+    stream_property(In, position(StartPos)), % Remember where we started
+    catch(
+        read_term(In, Term, [
+            variable_names(Vars),
+            comments(Comments),
+            consume_layout(true),
+            module(user)
+        ]),
+        Error,
+        (handle_and_restore(In, StartPos, Error), Term = error_skipped)
+    ),
+    (   Term == end_of_file
     ->  print_comments(Comments)
-    ;   extract_predicate_indicator(Term, CurrentPred),
-        (   (   CurrentPred=test/1
-            ;   CurrentPred=test/2
-            )
-        ->  (   LastPred\==none
-            ->  nl
-            ;   true
-            )
-        ;   LastPred\==none,
-            CurrentPred\=LastPred
-        ->  nl
-        ;   true
-        ),
-        print_comments(Comments),
-        portray_clause(current_output, Term, [variable_names(Vars), right_margin(80), indent_arguments(4)]),
+    ;   Term == error_skipped
+    ->  read_and_print_grouped(In, none) % Reset group on junk
+    ;   process_valid_term(Term, Vars, Comments, LastPred, CurrentPred),
         read_and_print_grouped(In, CurrentPred)
     ).
+
+%% If parsing fails, rewind and print the raw text
+handle_and_restore(In, StartPos, _Error) :-
+    set_stream_position(In, StartPos),
+    % Read until the end of the current line to preserve the "junk"
+    read_line_to_string(In, Junk),
+    (   Junk == end_of_file
+    ->  true
+    ;   format("~s~n", [Junk])
+    ).
+
+process_valid_term(Term, Vars, Comments, LastPred, CurrentPred) :-
+    extract_predicate_indicator(Term, CurrentPred),
+    (   LastPred \== none, CurrentPred \= LastPred
+    ->  nl
+    ;   true
+    ),
+    print_comments(Comments),
+    portray_clause(current_output, Term, [
+        variable_names(Vars), 
+        right_margin(80), 
+        indent_arguments(4)
+    ]).
+
+%% Helper to report the error and skip the problematic part
+handle_syntax_error(_, In) :-
+    % message_to_string(Error, Message),
+    % format(user_error, "% Syntax Error Encountered: ~w~n", [Message]),
+    % Skip until the next period or newline to try and recover
+    % This is a simple recovery strategy
+    skip_to_next_term(In).
+
+skip_to_next_term(In) :-
+    get_code(In, Code),
+    (   Code == -1 % EOF
+    ->  true
+    ;   Code == 46 % Period '.'
+    ->  true
+    ;   skip_to_next_term(In)
+    ).
+
+%% Move the logic for printing into its own predicate for cleanliness
+process_term(Term, Vars, Comments, LastPred, CurrentPred) :-
+    extract_predicate_indicator(Term, CurrentPred),
+    (   LastPred \== none, CurrentPred \= LastPred
+    ->  nl
+    ;   true
+    ),
+    print_comments(Comments),
+    portray_clause(current_output, Term, [
+        variable_names(Vars), 
+        right_margin(80), 
+        indent_arguments(4)
+    ]).
 
 % UTILITIES
 % =============================================================================
