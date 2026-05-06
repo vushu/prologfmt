@@ -81,3 +81,7 @@ vim.api.nvim_create_autocmd("BufWritePre", {
   callback = prolog_format,
 })
 ```
+
+## Known issues 
+- Inline comments gets moved to top of the clause.
+- Inline comments after a `.` gets moved to top of the next clause.
