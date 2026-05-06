@@ -2,14 +2,32 @@
 
 A Prolog formatter that follows SWI-Prolog’s formatting conventions, with the exception of tests, where we insert newline to improve readability.
 
+## Install 
+
+Build the executable yourself by running
+```
+make
+```
+
+or get the executable from 
+https://github.com/vushu/prologfmt/releases/
+
+Then add to `PATH` or 
+```
+sudo cp prologfmt /usr/local/bin/
+sudo chmod +x /usr/local/bin/prologfmt
+```
+
 ## Usage:
 
 ```
-make
-./prologfmt messy.pl > formatted.pl
+// for help
+prologfmt -h or --help
+
+prologfmt messy.pl > formatted.pl
 
 // in-place format
-./prologfmt -i messy.pl
+prologfmt -i messy.pl
 
 // using stdin, useful for editors
 cat messy.pl | prologfmt
@@ -21,7 +39,6 @@ prologfmt --stdin < file.pl
 
 ## Vim/Neovim
 
-This assumes that prologfmt is added to `PATH` 
 
 ### Trigger on `<leader>f`
 

@@ -103,41 +103,59 @@ run_formatter_tests :-
     ;   halt(1)
     ).
 
-% Case 1: In-place formatting
-% Case 2: Print to stdout
-% Ensure it's not a flag
-% Case 3: No valid file args, run tests
+print_help :-
+    format("prologfmt - A simple Prolog formatter~n~n"),
+    format("Usage:~n"),
+    format("  prologfmt FILE                 Format file and print to stdout~n"),
+    format("  prologfmt -i FILE              Format file in-place~n"),
+    format("  prologfmt --in-place FILE      Same as -i~n"),
+    format("  prologfmt --stdin              Read from stdin, write to stdout~n"),
+    format("  prologfmt < FILE               Implicit stdin mode (pipe input)~n"),
+    format("  prologfmt -h, --help           Show this help message~n"),
+    format("  prologfmt -t, --test           Run internal test suite~n"),
+    format("~n"),
+    format("Examples:~n"),
+    format("  prologfmt messy.pl~n"),
+    format("  prologfmt -i messy.pl~n"),
+    format("  cat messy.pl | prologfmt~n").
+
+% Help
+% Tests (explicit only)
+% In-place formatting
+% File → stdout
+% Explicit stdin
+% Implicit stdin (pipe)
+% Default: show help
 main :-
     current_prolog_flag(argv, Argv),
-    (   % Case 1: In-place formatting
-        Argv=[Flag, File],
+    (   member(Arg, Argv),
+        member(Arg, ['-h', '--help'])
+    ->  print_help,
+        halt(0)
+    ;   member(Arg, Argv),
+        member(Arg, ['-t', '--test'])
+    ->  run_formatter_tests,
+        halt(0)
+    ;   Argv=[Flag, File],
         member(Flag, ['-i', '--in-place'])
     ->  format_string_to_file(File),
         halt(0)
-
-    ;   % Case 2: File → stdout
-        Argv=[File],
+    ;   Argv=[File],
         \+ sub_string(File, 0, 1, _, "-")
     ->  format_prolog_file(File),
         halt(0)
-
-    ;   % Case 3: Explicit stdin
-        Argv=['--stdin']
+    ;   Argv=['--stdin']
     ->  read_string(user_input, _, Raw),
         format_string(Raw, Formatted),
         format("~s", [Formatted]),
         halt(0)
-
-    ;   % Case 4: Implicit stdin (no args, but piped input)
-        Argv=[],
+    ;   Argv=[],
         \+ stream_property(user_input, tty(true))
     ->  read_string(user_input, _, Raw),
         format_string(Raw, Formatted),
         format("~s", [Formatted]),
         halt(0)
-
-    ;   % Case 5: fallback → tests
-        run_formatter_tests,
+    ;   print_help,
         halt(0)
     ).
 
