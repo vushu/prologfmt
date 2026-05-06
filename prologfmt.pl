@@ -39,7 +39,7 @@ read_and_print_grouped(In, LastPred) :-
     (   Term == end_of_file
     ->  print_comments(Comments)
     ;   Term == error_skipped
-    ->  read_and_print_grouped(In, none) % Reset group on junk
+    ->  read_and_print_grouped(In, LastPred) % Reset group on junk
     ;   process_valid_term(Term, Vars, Comments, LastPred, CurrentPred),
         read_and_print_grouped(In, CurrentPred)
     ).
@@ -120,14 +120,18 @@ print_comments([_Pos-Comment|T]) :-
     format("~w~n", [Comment]),
     print_comments(T).
 
-extract_predicate_indicator((Head:-_), Name/Arity) :-
-    !,
-    functor(Head, Name, Arity).
-extract_predicate_indicator((Head-->_), Name/Arity) :-
-    !,
-    functor(Head, Name, Arity).
-extract_predicate_indicator(Term, Name/Arity) :-
-    functor(Term, Name, Arity).
+extract_predicate_indicator(Term, Indicator) :-
+    % Peel off the head
+    (   Term = (Head :- _) -> true 
+    ;   Term = (Head --> _) -> true
+    ;   Head = Term 
+    ),
+    functor(Head, Name, Arity),
+    % Special handling for PLUnit tests to ensure they aren't clumped
+    (   (Name == test, (Arity == 1 ; Arity == 2))
+    ->  Indicator = Head
+    ;   Indicator = Name/Arity
+    ).
 
 % UNIT TESTS
 % =============================================================================
