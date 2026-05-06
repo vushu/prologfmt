@@ -19,12 +19,13 @@ cat messy.pl | prologfmt
 prologfmt --stdin < file.pl
 ```
 
-## Vim
+## Vim/Neovim
 
 This assumes that prologfmt is added to `PATH` 
 
 Trigger on `<leader>f`
 
+vimscript
 ```vim
 innoremap <leader>f :call PrologFormat()<CR>
 
@@ -35,6 +36,7 @@ function! PrologFormat()
 endfunction
 ```
 
+lua
 ```lua
 vim.keymap.set("n", "<leader>f", function()
   local cursor = vim.api.nvim_win_get_cursor(0)
@@ -44,10 +46,13 @@ end)
 ```
 
 On save
+
+vimscript
 ```vim
 autocmd BufWritePre *.pl call PrologFormat()
 ```
 
+lua
 ```lua
 vim.api.nvim_create_autocmd("BufWritePre", {
   pattern = "*.pl",
